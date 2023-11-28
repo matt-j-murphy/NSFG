@@ -1,0 +1,579 @@
+---
+title: "agenor_v2"
+author: "Matthew J. Murphy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Preprocessing steps
+
+## Set working directory
+
+```{r, warning=F, message=F}
+setwd("C:/Users/mmurph36/OneDrive - Brown University/Documents/nsfg")
+
+#install.packages("haven")
+install.packages("survey", repos = "http://cran.us.r-project.org")
+#install.packages("tidyverse")
+#install.packages("margrittr")
+#install.packages("plyr")
+#install.packages("gtsummary")
+
+#library(haven)
+library(survey)
+#library(tidyverse)
+#library(magrittr)
+#library(plyr)
+#library(gtsummary)
+```
+
+## Read in 2011-2019 fem resp and preg .rds files
+
+```{r}
+preg1 <- readRDS("2011_2013_FemPregData.rds")
+fem1 <- readRDS("2011_2013_FemRespData.rds")
+preg2 <- readRDS("2013_2015_FemPregData.rds")
+fem2 <- readRDS("2013_2015_FemRespData.rds")
+preg3 <- readRDS("2015_2017_FemPregData.rds")
+fem3 <- readRDS("2015_2017_FemRespData.rds")
+preg4 <- readRDS("2017_2019_FemPregData.rds")
+fem4 <- readRDS("2017_2019_FemRespData.rds")
+```
+
+## Create one large preg and fem files for 2011-2019
+
+```{r}
+preg <- data.table::rbindlist(list(preg1, preg2, preg3, preg4), fill = T)
+fem <- data.table::rbindlist(list(fem1, fem2, fem3, fem4), fill = T)
+
+nrow(preg) # 38669 pregnancy records
+nrow(fem) # 22995 female respondent records
+```
+
+## Scrape sexual orientation variable from 'fem' data.table
+
+`orient_a` was "USED IN RANDOM HALF SAMPLE OF NSFG RESPONDENTS"
+ 
+- 1 = Heterosexual or straight
+- 2 = Homosexual, gay, or lesbian
+- 3 = Bisexual
+
+`orient_b` was "USED IN RANDOM HALF SAMPLE OF NSFG RESPONDENTS"
+ 
+- 1 = Lesbian or gay
+- 2 = Straight, that is not lesbian or gay
+- 3 = Bisexual
+- 4 = Something else
+
+```{r, message=F, warning=F}
+library(tidyverse)
+
+orients <- fem %>% select(caseid, orient_a, orient_b)
+
+orients$myorient <- rep(NA, nrow(orients))
+orients$myorient[orients$orient_a == 1 | orients$orient_b == 2] <- "Heterosexual"
+orients$myorient[orients$orient_a == 2 | orients$orient_b == 1] <- "Lesbian"
+orients$myorient[orients$orient_a == 3 | orients$orient_b == 3] <- "Bisexual"
+
+length(which(orients$myorient %in% c("Heterosexual", "Lesbian", "Bisexual"))) 
+# N = 11,283 myorient values of interest
+
+# given a list of 11,283 orients and their caseid's, we want to merge so that all caseid's 
+# occurring in both data frames have their orientation added in the orients column
+nsfg_data <- merge(x = preg,
+                   y = orients, 
+                   by = "caseid")
+
+nsfg_data <- nsfg_data %>% subset(!is.na(myorient))
+nrow(nsfg_data) #mapped onto 19,029 pregnancies
+```
+
+## Merge weights data.frame into nsfg_data by 'caseid'
+
+```{r}
+weightsFrame <- readRDS("2011_2019_FemaleWgtData.rds")
+
+# join
+nsfg_data <- merge(x = nsfg_data, 
+             y = weightsFrame, 
+             by="caseid")
+
+```
+
+## Subset nsfg_data by age (between 15 and 45)
+
+```{r}
+# Create your age subset... 
+length(nsfg_data$caseid) # 19,029 pregnancies of interest
+
+length(which(nsfg_data$agepreg < 15 | 
+             nsfg_data$agepreg > 45 | 
+             is.na(nsfg_data$agepreg))) # 550 fall outside of age range
+
+nsfg_data <- nsfg_data %>% subset(agepreg >= 15 & agepreg <= 45)
+
+length(nsfg_data$caseid) # leaves us w/ 18,479 pregnancies of interest
+```
+
+## Create 'myrace'
+
+```{r}
+# create myrace
+nsfg_data$myrace <- rep(NA, nrow(nsfg_data))
+nsfg_data$myrace[nsfg_data$hisprace2 == 1] <- "Latina"
+nsfg_data$myrace[nsfg_data$hisprace2 == 2] <- "White"
+nsfg_data$myrace[nsfg_data$hisprace2 == 3] <- "Black"
+```
+
+```{r}
+nsfg_data <- nsfg_data %>% subset(!is.na(myrace))
+nrow(nsfg_data)
+```
+
+## Create eventual strata
+
+-   1 = White Heterosexual
+-   2 = Black Heterosexual
+-   3 = Latina Heterosexual
+-   4 = White Bisexual
+-   5 = Black Bisexual
+-   6 = Latina Bisexual
+-   7 = White Lesbian
+-   8 = Black Lesbian
+-   9 = Latina Lesbian
+
+```{r}
+
+nsfg_data$mystrata <- rep(NA, nrow(nsfg_data))
+
+nsfg_data$mystrata[nsfg_data$myrace == "White" & 
+                     nsfg_data$myorient == "Heterosexual"] <- 1
+
+nsfg_data$mystrata[nsfg_data$myrace == "Black" & 
+                     nsfg_data$myorient == "Heterosexual"] <- 2
+
+nsfg_data$mystrata[nsfg_data$myrace == "Latina" & 
+                     nsfg_data$myorient == "Heterosexual"] <- 3
+
+###############################################################################
+
+nsfg_data$mystrata[nsfg_data$myrace == "White" & 
+                     nsfg_data$myorient %in% c("Lesbian", "Bisexual")] <- 4
+
+nsfg_data$mystrata[nsfg_data$myrace == "Black" & 
+                     nsfg_data$myorient  %in% c("Lesbian", "Bisexual")] <- 5
+
+nsfg_data$mystrata[nsfg_data$myrace == "Latina" & 
+                     nsfg_data$myorient  %in% c("Lesbian", "Bisexual")] <- 6
+
+```
+
+```{r}
+nsfg_data <- nsfg_data %>% subset(!is.na(wgt2011_2019))
+nrow(nsfg_data) 
+
+# N = 13,742 pregnancies with non-NA weights
+```
+
+###############################################################################
+
+# Get testing vars from 'fem' files
+```{r}
+testing <- fem %>% select(caseid, pap12, stdsvc12)
+
+# join
+nsfg_data <- merge(x = nsfg_data, 
+             y = testing, 
+             by="caseid")
+
+nrow(nsfg_data)
+```
+
+###############################################################################
+
+# Get N (%) for `mystrata`
+
+```{r}
+table(nsfg_data$mystrata, exclude = NULL)
+prop.table(table(nsfg_data$mystrata))*100
+```
+
+###############################################################################
+
+# Create categorical variables for Table 1
+
+## Create `tbl1_age` var for age
+
+1 = 15-19
+2 = 20-29
+3 = 30+
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_age = ifelse(agepreg >= 15 & agepreg <= 19, 1,
+                           ifelse(agepreg >= 20 & agepreg <= 29, 2, 3)))
+```
+
+## Create `tbl_usBorn` var for us born
+
+1 = us born
+2 = not us born
+NA = NA
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_usBorn = ifelse(brnout == 5, 1,
+                           ifelse(brnout == 1, 2, NA)))
+```
+
+## Create `tbl1_residence` var for place of residence
+
+1 = city of msa
+2 = other msa
+3 = not msa
+NA = NA
+
+```{r}
+nsfg_data$tbl1_residence <- nsfg_data$metro
+```
+
+## Create `tbl1_relationship` var for relatioship status
+
+1 = never married
+2 = currently married to a male partner
+3 = not married but living with a male partner
+4 = separated, divorced, or widowed
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_relationship = ifelse(rmarital == 6, 
+                                    1,
+                                    ifelse(rmarital == 1, 
+                                           2,
+                                           ifelse(rmarital == 2, 
+                                                  3,
+                                                  ifelse(rmarital %in% c(3,4,5), 
+                                                         4,NA)))))
+```
+
+## Create `tbl1_education` var for educational attainment
+
+1 = less than high school
+2 = high school diploma
+3 = some college, associate's degree
+4 = bachelor's degree or higher
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_education = ifelse(hieduc %in% c(5,6,7,8), 
+                                 1,
+                                    ifelse(hieduc == 9, 
+                                           2,
+                                           ifelse(hieduc %in% c(10,11), 
+                                                  3,
+                                                  ifelse(hieduc %in% c(12,13,14,15), 
+                                                         4, NA)))))
+```
+
+
+## Create `tbl_householdFPL` var for household federal poverty level (%)
+
+1 <100
+2 100-199
+3 200-299
+4 >=300
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_householdFPL = ifelse(poverty %in% c(0:99),
+                                    1,
+                                    ifelse(poverty %in% c(100:199), 
+                                           2,
+                                           ifelse(poverty %in% c(200:299), 
+                                                  3,
+                                                  ifelse(poverty %in% c(300:700), 
+                                                         4, NA)))))
+```
+
+
+## Create `tbl1_employment` var for employment status
+
+1 = working for pay
+2 = not working for pay
+3 = student
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_employment = ifelse(laborfor %in% c(1,2,3,4), 1,
+                                  ifelse(laborfor %in% c(5,7,8,9), 2,
+                                         ifelse(laborfor == 6, 3, NA))))
+
+```
+
+
+## Create `tbl1_healthInsurance` var for health insurance status
+
+1 = private
+2 = public
+3 = under-insured or uninsured
+NA = NA
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_healthInsurance = ifelse(curr_ins == 1, 1,
+                                       ifelse(curr_ins %in% c(2,3), 2,
+                                              ifelse(curr_ins == 4, 3, NA))))
+```
+
+
+## Create `tbl_pap12` var for yes to pap test in past 12 months
+
+1 = yes
+2 = no
+NA = NA
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_pap12 = ifelse(pap12 == 1, 1,
+                             ifelse(pap12 == 5, 2, NA)))
+```
+
+
+## Create `tbl1_sti12` var for yes to STI test in past 12 months
+
+1 = yes
+2 = no
+NA = NA
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(tbl1_sti12 = ifelse(stdsvc12 == 1, 1,
+                             ifelse(stdsvc12 == 5, 2, NA)))
+```
+
+## Create `prenat_care` var for Y/N
+
+```{r}
+nsfg_data <- nsfg_data %>% 
+  mutate(prenat_care = ifelse(pncarewk %in% c(1,2), 1,
+                              ifelse(pncarewk == 3, 0, NA)))
+```
+
+## Make `mystrata_factor`
+```{r}
+nsfg_data$mystrata_factor <- as.factor(nsfg_data$mystrata)
+```
+
+```{r}
+nsfg_data$id_12 <- ifelse(nsfg_data$mystrata_factor == 1, 0,
+                          ifelse(nsfg_data$mystrata_factor == 2, 1, NA))
+
+nsfg_data$id_13 <- ifelse(nsfg_data$mystrata_factor == 1, 0,
+                          ifelse(nsfg_data$mystrata_factor == 3, 1, NA))
+
+nsfg_data$id_14 <- ifelse(nsfg_data$mystrata_factor == 1, 0,
+                          ifelse(nsfg_data$mystrata_factor == 4, 1, NA))
+
+nsfg_data$id_15 <- ifelse(nsfg_data$mystrata_factor == 1, 0,
+                          ifelse(nsfg_data$mystrata_factor == 5, 1, NA))
+
+nsfg_data$id_16 <- ifelse(nsfg_data$mystrata_factor == 1, 0,
+                          ifelse(nsfg_data$mystrata_factor == 6, 1, NA))
+```
+
+###############################################################################
+
+# Set nsfg_design
+
+```{r}
+nsfg_design <- svydesign(id = ~1, 
+                         weights = ~nsfg_data$wgt2011_2019, 
+                         data = nsfg_data)
+```
+
+# Get proportions for Table 1
+
+## `tbl1_age` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_age), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_age + mystrata_factor), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_usBorn` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_usBorn), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_usBorn + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_residence` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_residence), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_residence + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_relationship` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_relationship), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_relationship + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_education` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_education), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_education + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_householdFPL` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_householdFPL), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_householdFPL + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_employment` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_employment), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_employment + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_healthInsurance` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_healthInsurance), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_healthInsurance + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_pap12` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_pap12), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_pap12 + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+## `tbl1_sti12` by `mystrata`
+
+```{r}
+round(prop.table(svytable((~tbl1_sti12), nsfg_design))*100, digits = 3)
+
+round(prop.table(svytable((~tbl1_sti12 + mystrata), 
+                          nsfg_design), margin = 2)*100, digits = 3)
+```
+
+###############################################################################
+
+```{r}
+nsfg_design <- svydesign(id = ~1, 
+                         weights = ~nsfg_data$wgt2011_2019, 
+                         data = nsfg_data)
+```
+
+```{r}
+svyby(formula = ~prenat_care, 
+            by = ~mystrata_factor, 
+            design = nsfg_design, 
+            FUN = svyciprop, 
+            vartype = "ci")
+```
+
+
+```{r}
+svychisq(formula = ~prenat_care+id_16,
+         design = nsfg_design, 
+         statistic = "adjWald")
+```
+
+```{r}
+logit1 <- (svyglm(prenat_care~mystrata_factor, 
+                  family=quasibinomial, 
+                  design=nsfg_design, 
+                  na.action = na.omit))
+summary(logit1)
+exp(coef(logit1))
+exp(confint(logit1))
+```
+
+```{r}
+logit2 <- (svyglm(prenat_care~mystrata_factor +
+                    relevel(as.factor(tbl1_age), ref = 2) +
+                    relevel(as.factor(tbl1_residence), ref = 1) +
+                    relevel(as.factor(tbl1_usBorn), ref = 1) +
+                    relevel(as.factor(tbl1_relationship), ref = 1),
+                  family=quasibinomial, 
+                  design=nsfg_design, 
+                  na.action = na.omit))
+summary(logit2)
+exp(coef(logit2))
+exp(confint(logit2))
+```
+
+
+```{r}
+logit3 <- (svyglm(prenat_care~mystrata_factor +
+                    relevel(as.factor(tbl1_age), ref = 2) +
+                    relevel(as.factor(tbl1_residence), ref = 1) +
+                    relevel(as.factor(tbl1_usBorn), ref = 1) +
+                    relevel(as.factor(tbl1_education), ref = 4) +
+                    relevel(as.factor(tbl1_householdFPL), ref = 4) +
+                    relevel(as.factor(tbl1_employment), ref = 1),
+                  family=quasibinomial, 
+                  design=nsfg_design, 
+                  na.action = na.omit))
+summary(logit3)
+exp(coef(logit3))
+exp(confint(logit3))
+```
+
+```{r}
+logit4 <- (svyglm(prenat_care~mystrata_factor +
+                    relevel(as.factor(tbl1_age), ref = 2) +
+                    relevel(as.factor(tbl1_residence), ref = 1) +
+                    relevel(as.factor(tbl1_usBorn), ref = 1) +
+                    relevel(as.factor(tbl1_education), ref = 4) +
+                    relevel(as.factor(tbl1_householdFPL), ref = 4) +
+                    relevel(as.factor(tbl1_employment), ref = 1) +
+                    relevel(as.factor(tbl1_healthInsurance), ref = 1) +
+                    relevel(as.factor(tbl1_pap12), ref = 1) +
+                    relevel(as.factor(tbl1_sti12), ref = 1),
+                  family=quasibinomial, 
+                  design=nsfg_design, 
+                  na.action = na.omit))
+summary(logit4)
+exp(coef(logit4))
+exp(confint(logit4))
+```
+
+###############################################################################
+
+```{r}
+newdata <- as_tibble(predict(logit2, nsfg_data, type="response", se=TRUE))
+
+#plot_df <- bind_cols(nsfg_data, newdata)
+
+#ggplot(data=plot_df, aes(x=mystrata_factor, y=fit)) +
+#  geom_boxplot() +
+#  xlab("")
+```

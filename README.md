@@ -3,19 +3,17 @@
 # Download NSFG data
 https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/
 
-`2011_2019_FemaleWgtData.dat`
+- `2011_2019_FemaleWgtData.dat`
+- `2011_2013_FemPregData.dat`
+- `2013_2015_FemPregData.dat`
+- `2015_2017_FemPregData.dat`
+- `2017_2019_FemPregData.dat`
 
-`2011_2013_FemPregData.dat`
-`2011_2013_FemRespData.dat`
-`2013_2015_FemPregData.dat`
-`2013_2015_FemRespData.dat`
-`2013_2015_MaleData.dat`
-`2015_2017_FemPregData.dat`
-`2015_2017_FemRespData.dat`
-`2015_2017_MaleData.dat`
-`2017_2019_FemPregData.dat`
-`2017_2019_FemRespData.dat`
-`2017_2019_MaleData.dat`
+
+- `2011_2013_FemRespData.dat`
+- `2013_2015_FemRespData.dat`
+- `2015_2017_FemRespData.dat`
+- `2017_2019_FemRespData.dat`
 
 ### `agenor_v1.Rmd`
 - `Table 1` - Percent distribution of demographic, socioeconomic, and health care factors among sexual orientation identity and racial/ethnic subgroups of pregnant U.S. women aged 15-44 years (N=13,742)

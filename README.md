@@ -1,6 +1,6 @@
 # Analyses of the National Survey of Family Growth (NSFG)
 
-## Download NSFG data
+## Where to Download NSFG data
 https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/
 
 ### 2011-2019 Combined-Files Survey Weights 

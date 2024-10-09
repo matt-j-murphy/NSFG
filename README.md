@@ -1,6 +1,6 @@
 # National Survey of Family Growth (NSFG)
 
-Analzing frequency of receiving prenatal care among sexual orientation identity and racial/ethnic subgroups of pregnant U.S. women aged 15-44 years
+This project analyzes differences in prenatal care among sexual orientation and racial/ethnic subgroups of U.S. women aged 15-44 years.
 
 ## Where to Download NSFG data
 https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/
@@ -19,10 +19,6 @@ https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/
 - `2013_2015_FemRespData.dat`
 - `2015_2017_FemRespData.dat`
 - `2017_2019_FemRespData.dat`
-
-## Data Analysis Records
-
-# Analysis 1
 
 ## Table 1: Percent distribution of demographic, socioeconomic, and health care factors among sexual orientation identity and racial/ethnic subgroups of pregnant U.S. women aged 15-44 years (N=13742)
 ![table1](https://github.com/matt-j-murphy/NSFG/blob/6aa2d93debc86c88e0f81b0db646282d2f73fa33/agenor_table1.png)

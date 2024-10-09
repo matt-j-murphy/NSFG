@@ -1,0 +1,300 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(SAScii)
+library(readr)
+
+url_2017_2019_FemRespData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2017_2019_FemRespData.dat"
+url_2017_2019_FemPregData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2017_2019_FemPregData.dat"
+
+url_2015_2017_FemRespData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2015_2017_FemRespData.dat"
+url_2015_2017_FemPregData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2015_2017_FemPregData.dat"
+
+url_2013_2015_FemRespData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2013_2015_FemRespData.dat"
+url_2013_2015_FemPregData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2013_2015_FemPregData.dat"
+
+url_2011_2013_FemRespData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2011_2013_FemRespData.dat"
+url_2011_2013_FemPregData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2011_2013_FemPregData.dat"
+
+url_2011_2019_FemaleWgtData <- "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NSFG/2011_2019_FemaleWgtData.dat"
+
+```
+
+```{r}
+sas_url_2017_2019_FemRespData <- file.path( dirname(url_2017_2019_FemRespData) , "sas/2017_2019_FemRespSetup.sas" )
+sas_url_2017_2019_FemPregData <- file.path( dirname(url_2017_2019_FemPregData) , "sas/2017_2019_FemPregSetup.sas" )
+
+sas_url_2015_2017_FemRespData <- file.path( dirname(url_2015_2017_FemRespData) , "sas/2015_2017_FemRespSetup.sas" )
+sas_url_2015_2017_FemPregData <- file.path( dirname(url_2015_2017_FemPregData) , "sas/2015_2017_FemPregSetup.sas" )
+
+sas_url_2013_2015_FemRespData <- file.path( dirname(url_2013_2015_FemRespData) , "sas/2013_2015_FemRespSetup.sas" )
+sas_url_2013_2015_FemPregData <- file.path( dirname(url_2013_2015_FemPregData) , "sas/2013_2015_FemPregSetup.sas" )
+
+sas_url_2011_2013_FemRespData <- file.path( dirname(url_2011_2013_FemRespData) , "sas/2011_2013_FemRespSetup.sas" )
+sas_url_2011_2013_FemPregData <- file.path( dirname(url_2011_2013_FemPregData) , "sas/2011_2013_FemPregSetup.sas" )
+
+sas_url_2011_2019_FemaleWgtData <- file.path( dirname(url_2011_2019_FemaleWgtData) , "sas/2011_2019_FemaleWgtSetup.sas" )
+```
+
+```{r}
+sas_positions1 <-
+    parse.SAScii(sas_url_2017_2019_FemRespData)
+
+sas_positions2 <-
+    parse.SAScii(sas_url_2017_2019_FemPregData)
+
+sas_positions3 <-
+    parse.SAScii(sas_url_2015_2017_FemRespData)
+
+sas_positions4 <-
+    parse.SAScii(sas_url_2015_2017_FemPregData)
+
+sas_positions5 <-
+    parse.SAScii(sas_url_2013_2015_FemRespData)
+
+sas_positions6 <-
+    parse.SAScii(sas_url_2013_2015_FemPregData)
+
+sas_positions7 <-
+    parse.SAScii(sas_url_2011_2013_FemRespData)
+
+sas_positions8 <-
+    parse.SAScii(sas_url_2011_2013_FemPregData)
+
+sas_positions9 <-
+    parse.SAScii(sas_url_2011_2019_FemaleWgtData)
+
+```
+
+```{r}
+sas_positions1[ , 'varname' ] <-
+    tolower( sas_positions1[ , 'varname' ] )
+
+sas_positions2[ , 'varname' ] <-
+    tolower( sas_positions2[ , 'varname' ] )
+
+sas_positions3[ , 'varname' ] <-
+    tolower( sas_positions3[ , 'varname' ] )
+
+sas_positions4[ , 'varname' ] <-
+    tolower( sas_positions4[ , 'varname' ] )
+
+sas_positions5[ , 'varname' ] <-
+    tolower( sas_positions5[ , 'varname' ] )
+
+sas_positions6[ , 'varname' ] <-
+    tolower( sas_positions6[ , 'varname' ] )
+
+sas_positions7[ , 'varname' ] <-
+    tolower( sas_positions7[ , 'varname' ] )
+
+sas_positions8[ , 'varname' ] <-
+    tolower( sas_positions8[ , 'varname' ] )
+
+sas_positions9[ , 'varname' ] <-
+    tolower( sas_positions9[ , 'varname' ] )
+```
+
+```{r}
+sas_positions1[ , 'column_types' ] <-
+        ifelse( sas_positions1[ , 'char' ] , "c" , "d" )
+
+sas_positions2[ , 'column_types' ] <-
+        ifelse( sas_positions2[ , 'char' ] , "c" , "d" )
+
+sas_positions3[ , 'column_types' ] <-
+        ifelse( sas_positions3[ , 'char' ] , "c" , "d" )
+
+sas_positions4[ , 'column_types' ] <-
+        ifelse( sas_positions4[ , 'char' ] , "c" , "d" )
+
+sas_positions5[ , 'column_types' ] <-
+        ifelse( sas_positions5[ , 'char' ] , "c" , "d" )
+
+sas_positions6[ , 'column_types' ] <-
+        ifelse( sas_positions6[ , 'char' ] , "c" , "d" )
+
+sas_positions7[ , 'column_types' ] <-
+        ifelse( sas_positions7[ , 'char' ] , "c" , "d" )
+
+sas_positions8[ , 'column_types' ] <-
+        ifelse( sas_positions8[ , 'char' ] , "c" , "d" )
+
+sas_positions9[ , 'column_types' ] <-
+        ifelse( sas_positions9[ , 'char' ] , "c" , "d" )
+```
+
+
+```{r}
+
+## 1
+
+nsfg_tbl <-
+    read_fwf(
+        url_2017_2019_FemRespData ,
+        fwf_widths( 
+            abs( sas_positions1[ , 'width' ] ) , 
+            col_names = sas_positions1[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions1[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_resp1719 <- data.frame( nsfg_tbl )
+
+## 2
+
+nsfg_tb2 <-
+    read_fwf(
+        url_2017_2019_FemPregData ,
+        fwf_widths( 
+            abs( sas_positions2[ , 'width' ] ) , 
+            col_names = sas_positions2[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions2[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_preg1719 <- data.frame( nsfg_tb2 )
+
+## 3
+
+nsfg_tb3 <-
+    read_fwf(
+        url_2015_2017_FemRespData ,
+        fwf_widths( 
+            abs( sas_positions3[ , 'width' ] ) , 
+            col_names = sas_positions3[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions3[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_resp1517 <- data.frame( nsfg_tb3 )
+
+## 4
+
+nsfg_tb4 <-
+    read_fwf(
+        url_2015_2017_FemPregData ,
+        fwf_widths( 
+            abs( sas_positions4[ , 'width' ] ) , 
+            col_names = sas_positions4[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions4[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_preg1517 <- data.frame( nsfg_tb4 )
+
+## 5
+
+nsfg_tb5 <-
+    read_fwf(
+        url_2013_2015_FemRespData ,
+        fwf_widths( 
+            abs( sas_positions5[ , 'width' ] ) , 
+            col_names = sas_positions5[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions5[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_resp1315 <- data.frame( nsfg_tb5 )
+
+## 6
+
+nsfg_tb6 <-
+    read_fwf(
+        url_2013_2015_FemPregData ,
+        fwf_widths( 
+            abs( sas_positions6[ , 'width' ] ) , 
+            col_names = sas_positions6[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions6[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_preg1315 <- data.frame( nsfg_tb6 )
+
+## 7
+
+nsfg_tb7 <-
+    read_fwf(
+        url_2011_2013_FemRespData ,
+        fwf_widths( 
+            abs( sas_positions7[ , 'width' ] ) , 
+            col_names = sas_positions7[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions7[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_resp1113 <- data.frame( nsfg_tb7 )
+
+## 8
+
+nsfg_tb8 <-
+    read_fwf(
+        url_2011_2013_FemPregData ,
+        fwf_widths( 
+            abs( sas_positions8[ , 'width' ] ) , 
+            col_names = sas_positions8[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions8[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_preg1113 <- data.frame( nsfg_tb8 )
+
+
+## 9
+
+nsfg_tb9 <-
+    read_fwf(
+        url_2011_2019_FemaleWgtData,
+        fwf_widths( 
+            abs( sas_positions9[ , 'width' ] ) , 
+            col_names = sas_positions9[ , 'varname' ] 
+        ) ,
+        col_types = paste0( sas_positions9[ , 'column_types' ] , collapse = "" ) ,
+        na = c( "" , "." )
+    )
+    
+nsfg_wgt <- data.frame( nsfg_tb9 )
+```
+
+
+```{r}
+nsfg_fn1 <- file.path( path.expand( "~" ) , "nsfg_final" , "resp1719.rds" )
+saveRDS(nsfg_resp1719 , file = nsfg_fn1 , compress = FALSE )
+
+nsfg_fn2 <- file.path( path.expand( "~" ) , "nsfg_final" , "preg1719.rds" )
+saveRDS(nsfg_preg1719 , file = nsfg_fn2 , compress = FALSE )
+
+nsfg_fn3 <- file.path( path.expand( "~" ) , "nsfg_final" , "resp1517.rds" )
+saveRDS(nsfg_resp1517 , file = nsfg_fn3 , compress = FALSE )
+
+nsfg_fn4 <- file.path( path.expand( "~" ) , "nsfg_final" , "preg1517.rds" )
+saveRDS(nsfg_preg1517 , file = nsfg_fn4 , compress = FALSE )
+
+nsfg_fn5 <- file.path( path.expand( "~" ) , "nsfg_final" , "resp1315.rds" )
+saveRDS(nsfg_resp1315 , file = nsfg_fn5 , compress = FALSE )
+
+nsfg_fn6 <- file.path( path.expand( "~" ) , "nsfg_final" , "preg1315.rds" )
+saveRDS(nsfg_preg1315 , file = nsfg_fn6 , compress = FALSE )
+
+nsfg_fn7 <- file.path( path.expand( "~" ) , "nsfg_final" , "resp1113.rds" )
+saveRDS(nsfg_resp1113 , file = nsfg_fn7 , compress = FALSE )
+
+nsfg_fn8 <- file.path( path.expand( "~" ) , "nsfg_final" , "preg1113.rds" )
+saveRDS(nsfg_preg1113 , file = nsfg_fn8 , compress = FALSE )
+
+nsfg_fn9 <- file.path( path.expand( "~" ) , "nsfg_final" , "wgt.rds" )
+saveRDS(nsfg_wgt , file = nsfg_fn9 , compress = FALSE )
+
+```
+
